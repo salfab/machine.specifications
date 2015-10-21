@@ -266,11 +266,3 @@ paket.lock
 ##FAKE
 .fake/
 
-##Expected Files
-!tools/NuGet/nuget.exe
-!tools/Paket/paket.exe
-
-
-
-paket.lock
-/.fake
