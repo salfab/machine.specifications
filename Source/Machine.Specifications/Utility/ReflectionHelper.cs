@@ -11,8 +11,35 @@ namespace Machine.Specifications.Utility
     {
         public static IEnumerable<FieldInfo> GetInstanceFields(this Type type)
         {
-            return
-              type.GetFields(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.NonPublic | BindingFlags.Public);
+            var declaredFields = type.GetFields(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.NonPublic | BindingFlags.Public);
+            IEnumerable<FieldInfo> consideredFields;
+            if (declaredFields.Any(IsNonPropagatedTest))
+            {
+                var inheritedFields = type.GetTypeInfo().BaseType?.GetFields(BindingFlags.FlattenHierarchy | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).Where(IsPropagatedTest);
+
+                consideredFields = inheritedFields != null ? declaredFields.Concat(inheritedFields) : declaredFields;
+            }
+            else
+            {
+                consideredFields = declaredFields;
+            }
+
+            return consideredFields;
+        }
+
+        static bool IsPropagatedTest(FieldInfo field)
+        {
+            return IsTest(field) && field.IsPublic && field.Name.EndsWith("for_all_inherited_contexts");
+        }
+
+        static bool IsNonPropagatedTest(FieldInfo field)
+        {
+            return IsTest(field) && (!field.IsPublic || !field.Name.EndsWith("for_all_inherited_contexts"));
+        }
+
+        static bool IsTest(FieldInfo field)
+        {
+            return field.FieldType == typeof(It);
         }
 
         public static IEnumerable<FieldInfo> GetStaticProtectedOrInheritedFields(this Type type)
